@@ -1,4 +1,5 @@
 import networkx as nx
+from collections import Counter, OrderedDict
 from twitter_preprocessor import TwitterPreprocessor
 from pymongo import MongoClient
 from tqdm import tqdm
@@ -141,6 +142,32 @@ class TweetAnalysis:
         plt.axis("off")
         plt.savefig('figures/WordCloud_' + str(len(wordList)) + '.png', dpi=300)
 
+    def hashtagFrequenciesCsv(self):
+        tags = self.hashtags()
+        c = Counter(tags)
+        y = OrderedDict(c.most_common())
+        file = open('files/hashtagFrequencies.csv','w',encoding='utf-8')
+        for k,v in y.items():
+            file.write(str(k)+','+str(v)+'\n')
+        file.close()
+        return c
+
+    def wordFrequenciesCsv(self):
+        texts = self.texts()
+        wordList = []
+        for t in texts:
+            p = TwitterPreprocessor(t)
+            p.fully_preprocess()
+            new = p.text
+            text = word_tokenize(new)
+            wordList.extend(text)
+        c = Counter(wordList)
+        y = OrderedDict(c.most_common())
+        file = open('files/WordFrequencies.csv','w',encoding='utf-8')
+        for k,v in y.items():
+            file.write(str(k)+','+str(v)+'\n')
+        file.close()
+        return c
 
 t = TweetAnalysis(col)
-t.textCloud()
+t.wordFrequenciesCsv()
