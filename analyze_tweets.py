@@ -8,6 +8,7 @@ from wordcloud import WordCloud, STOPWORDS
 from nltk import pos_tag, word_tokenize
 import os
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
@@ -23,6 +24,10 @@ class TweetAnalysis:
 
 
     def tweets(self):
+        """
+            Tweets function reads all the records from a MongoDB
+            :return: a list of all tweet objects in our DB
+        """
         tweets = []
         iterator = self.collection.find()
         print('...Collecting Tweet Objects...')
@@ -31,6 +36,10 @@ class TweetAnalysis:
         return tweets
 
     def hashtags(self):
+        """
+        hashtags function collects all the hashtags included in the list of tweets
+        :return: a list of all hashtags included in tweets
+        """
         hashtagList=[]
         for t in self.tweets():
             tags = t['entities']['hashtags']
@@ -43,6 +52,10 @@ class TweetAnalysis:
         return hashtagList
 
     def urls(self):
+        """
+        urls function collects all the urls included in the list of tweets
+        :return: a list of all urls included in tweets
+        """
         urlList = []
         for t in self.tweets():
             urls = t['entities']['urls']
@@ -55,6 +68,10 @@ class TweetAnalysis:
         return urlList
 
     def mentions(self):
+        """
+        mentions function collects all the mentions included in the list of tweets
+        :return: a list of all mentions included in tweets
+        """
         userMentions = []
         for t in self.tweets():
             urls = t['entities']['user_mentions']
@@ -67,6 +84,10 @@ class TweetAnalysis:
         return userMentions
 
     def users(self):
+        """
+        users function collects all the users included in the list of tweets
+        :return: a list of all users ids that posted the tweets
+        """
         userList=[]
         for t in self.tweets():
             userList.append(t['user']['id_str'])
@@ -146,7 +167,7 @@ class TweetAnalysis:
         tags = self.hashtags()
         c = Counter(tags)
         y = OrderedDict(c.most_common())
-        file = open('files/hashtagFrequencies.csv','w',encoding='utf-8')
+        file = open('files/hashtagFrequencies_'+datetime.date.today().strftime("%B %d, %Y")+'.csv','w',encoding='utf-8')
         for k,v in y.items():
             file.write(str(k)+','+str(v)+'\n')
         file.close()
@@ -163,11 +184,44 @@ class TweetAnalysis:
             wordList.extend(text)
         c = Counter(wordList)
         y = OrderedDict(c.most_common())
-        file = open('files/WordFrequencies.csv','w',encoding='utf-8')
+        file = open('files/WordFrequencies_'+datetime.date.today().strftime("%B %d, %Y")+'.csv','w',encoding='utf-8')
         for k,v in y.items():
             file.write(str(k)+','+str(v)+'\n')
         file.close()
         return c
 
+    def most_retweeted_tweets(self,n):
+        rts = self.retweets()
+        rtdict={}
+        for r in rts:
+            rtcount = r['retweeted_status']['retweet_count']
+            rtdict[r['id_str']]=rtcount
+        top = sorted(rtdict, key=rtdict.get, reverse=True)[:n]
+        topUrls = ["https://twitter.com/user/status/"+i for i in top]
+        file = open('files/top_'+str(n)+'_Retweets_' + datetime.date.today().strftime("%B %d, %Y") + '.csv', 'w',
+                    encoding='utf-8')
+        for k in topUrls:
+            file.write(str(k)+ '\n')
+        file.close()
+        return topUrls
+
+    def most_favorited_tweets(self,n):
+        ts = self.tweets()
+        tdict={}
+        for t in ts:
+            if 'retweeted_status' in t:
+                favcount = t['retweeted_status']['favorite_count']
+                tdict[t['id_str']]=favcount
+            else:
+                favcount = t['favorite_count']
+                tdict[t['id_str']] = favcount
+        top = sorted(tdict, key=tdict.get, reverse=True)[:n]
+        topFavs = ["https://twitter.com/user/status/"+i for i in top]
+        file = open('files/top_'+str(n)+'_Favorite_tweets_' + datetime.date.today().strftime("%B %d, %Y") + '.csv', 'w',
+                    encoding='utf-8')
+        for k in topFavs:
+            file.write(str(k)+ '\n')
+        file.close()
+        return topFavs
+
 t = TweetAnalysis(col)
-t.wordFrequenciesCsv()
