@@ -1,4 +1,10 @@
 import networkx as nx
+import gensim
+from gensim.utils import simple_preprocess
+from gensim.parsing.preprocessing import STOPWORDS
+from nltk.stem import WordNetLemmatizer, SnowballStemmer
+from nltk.stem.porter import *
+import nltk
 from collections import Counter, OrderedDict
 from twitter_preprocessor import TwitterPreprocessor
 from pymongo import MongoClient
@@ -11,10 +17,24 @@ from dotenv import load_dotenv
 import datetime
 
 load_dotenv()
+stemmer = SnowballStemmer('english')
+# nltk.download('wordnet')
 
 client = MongoClient(host=os.getenv("DB_HOST"), port=int(os.getenv("DB_PORT")), username=os.getenv("DB_USERNAME"), password=os.getenv("DB_PASSWORD"), authSource=os.getenv("DB_AUTH_DB"))
 db = client[os.getenv("DB_AUTH_DB")]
 col = db[os.getenv("DB_COLLECTION")]
+
+
+def lemmatize_stemming(tweetText):
+    return stemmer.stem(WordNetLemmatizer().lemmatize(tweetText, pos='v'))
+
+
+def preprocess(tweetText):
+    result = []
+    for token in gensim.utils.simple_preprocess(tweetText):
+        if token not in gensim.parsing.preprocessing.STOPWORDS and len(token) > 3:
+            result.append(lemmatize_stemming(token))
+    return result
 
 
 class TweetAnalysis:
@@ -224,4 +244,32 @@ class TweetAnalysis:
         file.close()
         return topFavs
 
-t = TweetAnalysis(col)
+    def topic_models(self):
+        processed_docs = []
+        for t in self.texts():
+            p = TwitterPreprocessor(t)
+            p.fully_preprocess()
+            new = p.text
+            processed_text = preprocess(new)
+            processed_docs.append(processed_text)
+        dictionary = gensim.corpora.Dictionary(processed_docs)
+        bow_corpus = [dictionary.doc2bow(doc) for doc in processed_docs]
+        from gensim import corpora, models
+        tfidf = models.TfidfModel(bow_corpus)
+        corpus_tfidf = tfidf[bow_corpus]
+        lda_model = gensim.models.LdaMulticore(bow_corpus, num_topics=10, id2word=dictionary, passes=2, workers=2)
+        file1 = open('files/bow_topic_models' + datetime.date.today().strftime("%B %d, %Y") + '.csv', 'w',encoding='utf-8')
+        for idx, topic in lda_model.print_topics(-1,15):
+            file1.write('Topic: {} \nWords: {}'.format(idx, topic))
+            file1.write('\n')
+        file1.close()
+        lda_model_tfidf = gensim.models.LdaMulticore(corpus_tfidf, num_topics=10, id2word=dictionary, passes=2,workers=4)
+        file2 = open('files/tfidf_topic_models' + datetime.date.today().strftime("%B %d, %Y") + '.csv', 'w',encoding='utf-8')
+        for idx, topic in lda_model_tfidf.print_topics(-1,15):
+            file2.write('Topic: {} \nWords: {}'.format(idx, topic))
+            file2.write('\n')
+        file2.close()
+
+if __name__ == "__main__":
+    t = TweetAnalysis(col)
+    t.topic_models()
