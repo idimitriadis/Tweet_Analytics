@@ -113,6 +113,18 @@ class TweetAnalysis:
             userList.append(t['user']['id_str'])
         return userList
 
+    def most_active_users(self,n):
+        userList = []
+        for t in self.tweets():
+            userList.append(t['user']['screen_name'])
+        most_common = [u for u, u_count in Counter(userList).most_common(n)]
+        file = open('files/most_active_users_' + datetime.date.today().strftime("%B %d, %Y") + '.csv', 'w',
+                    encoding='utf-8')
+        for k in most_common:
+            file.write("https://twitter.com/" +str(k) + '\n')
+        file.close()
+        return most_common
+
     def texts(self):
         all_texts = []
         for t in self.tweets():
@@ -270,6 +282,12 @@ class TweetAnalysis:
             file2.write('\n')
         file2.close()
 
+
+
 if __name__ == "__main__":
     t = TweetAnalysis(col)
-    t.topic_models()
+    t.most_active_users(100)
+    t.most_favorited_tweets(10)
+    t.most_retweeted_tweets(10)
+    t.wordFrequenciesCsv()
+    t.hashtagFrequenciesCsv()
