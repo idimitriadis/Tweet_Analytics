@@ -291,3 +291,6 @@ if __name__ == "__main__":
     t.most_retweeted_tweets(10)
     t.wordFrequenciesCsv()
     t.hashtagFrequenciesCsv()
+    t.topic_models()
+    t.hashtagCloud()
+    t.textCloud()
