@@ -87,6 +87,19 @@ class TweetAnalysis:
                     urlList.append(n['expanded_url'])
         return urlList
 
+    def top_n_urls(self,n):
+        '''
+        '''
+        urlList =self.urls()
+        most_common = [u for u, u_count in Counter(urlList).most_common(n)]
+        file = open('files/most_active_urls_' + datetime.date.today().strftime("%B %d, %Y") + '.csv', 'w',
+                    encoding='utf-8')
+        for k in most_common:
+            file.write(str(k) + '\n')
+        file.close()
+        return
+
+
     def mentions(self):
         """
         mentions function collects all the mentions included in the list of tweets
@@ -286,11 +299,12 @@ class TweetAnalysis:
 
 if __name__ == "__main__":
     t = TweetAnalysis(col)
-    t.most_active_users(100)
-    t.most_favorited_tweets(10)
-    t.most_retweeted_tweets(10)
-    t.wordFrequenciesCsv()
-    t.hashtagFrequenciesCsv()
-    t.topic_models()
-    t.hashtagCloud()
-    t.textCloud()
+    # t.most_active_users(100)
+    # t.most_favorited_tweets(10)
+    # t.most_retweeted_tweets(10)
+    # t.wordFrequenciesCsv()
+    # t.hashtagFrequenciesCsv()
+    # t.topic_models()
+    # t.hashtagCloud()
+    # t.textCloud()
+    t.top_n_urls(10)
