@@ -286,18 +286,23 @@ class TweetAnalysis:
         rtdict={}
         for r in rts:
             rtcount = r['retweeted_status']['retweet_count']
+            print (rtcount)
             rt_id = r['retweeted_status']['id_str']
             if rt_id in rtdict:
+                print ('not here')
                 if rtcount > rtdict[rt_id]:
                     rtdict[rt_id]=rtcount
+            else:
+                rtdict[rt_id] = rtcount
         top = sorted(rtdict, key=rtdict.get, reverse=True)[:n]
-        topUrls = ["https://twitter.com/user/status/"+i for i in top]
+        print (top)
+        toprts = ["https://twitter.com/user/status/"+i for i in top]
         file = open('files/top_'+str(n)+'_Retweets_' + datetime.date.today().strftime("%B %d, %Y") + '.csv', 'w',
                     encoding='utf-8')
-        for k in topUrls:
+        for k in toprts:
             file.write(str(k)+ '\n')
         file.close()
-        return topUrls,top
+        return toprts,top
 
     def most_favorited_tweets(self,n):
         """
@@ -309,10 +314,12 @@ class TweetAnalysis:
         for t in ts:
             if 'retweeted_status' in t:
                 favcount = t['retweeted_status']['favorite_count']
-                rt_id = r['retweeted_status']['id_str']
+                rt_id = t['retweeted_status']['id_str']
                 if rt_id in tdict:
                     if favcount > tdict[rt_id]:
                         tdict[rt_id]=favcount
+                else:
+                    tdict[rt_id] = favcount
             else:
                 favcount = t['favorite_count']
                 tdict[t['id_str']] = favcount
@@ -356,8 +363,8 @@ class TweetAnalysis:
 if __name__ == "__main__":
     t = TweetAnalysis(col)
     # t.most_active_users(100)
-    # t.most_favorited_tweets(10)
-    # t.most_retweeted_tweets(10)
+    t.most_favorited_tweets(10)
+    t.most_retweeted_tweets(10)
     # t.wordFrequenciesCsv()
     # t.hashtagFrequenciesCsv()
     # t.topic_models()
