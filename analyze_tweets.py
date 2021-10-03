@@ -89,6 +89,8 @@ class TweetAnalysis:
 
     def top_n_urls(self,n):
         '''
+        function used to find the n top urls - number of count
+        :return: a list of the expanded urls in decreasing order - doesn't return count
         '''
         urlList =self.urls()
         most_common = [u for u, u_count in Counter(urlList).most_common(n)]
@@ -97,7 +99,7 @@ class TweetAnalysis:
         for k in most_common:
             file.write(str(k) + '\n')
         file.close()
-        return
+        return most_common
 
 
     def mentions(self):
@@ -127,6 +129,10 @@ class TweetAnalysis:
         return userList
 
     def most_active_users(self,n):
+        """
+        most active users function collects the n most active users included in the list of tweets
+        :return: a list of the n most active users
+        """
         userList = []
         for t in self.tweets():
             userList.append(t['user']['screen_name'])
@@ -139,6 +145,10 @@ class TweetAnalysis:
         return most_common
 
     def texts(self):
+        """
+        texts function collects all the texts in the list of tweets
+        :return: a list of all texts
+        """
         all_texts = []
         for t in self.tweets():
             if 'extended_tweet' in t:
@@ -148,6 +158,10 @@ class TweetAnalysis:
         return all_texts
 
     def retweets(self):
+        """
+        retweets function collects all the tweets that are retweets
+        :return: a list of all retweets
+        """
         rts = []
         for t in self.tweets():
             if 'retweeted_status' in t:
@@ -155,6 +169,10 @@ class TweetAnalysis:
         return rts
 
     def only_tweets(self):
+        """
+        only tweets function collects all the tweets that are retweets
+        :return: a list of only tweets (retweets are filtered out)
+        """
         ts = []
         for t in self.tweets():
             if 'retweeted_status' not in t:
@@ -162,6 +180,10 @@ class TweetAnalysis:
         return ts
 
     def text_only_tweets(self):
+        """
+        text only tweets function collects the texts of only tweets
+        :return: a list of all tweets' text, no retweets included
+        """
         all_texts = []
         for t in self.only_tweets():
             if 'extended_tweet' in t:
@@ -171,6 +193,10 @@ class TweetAnalysis:
         return all_texts
 
     def text_retweets(self):
+        """
+        text retweets function collects the texts of only retweets
+        :return: a list of all retweets' text, no tweets included
+        """
         all_texts = []
         for t in self.retweets():
             if 'extended_tweet' in t:
@@ -180,6 +206,10 @@ class TweetAnalysis:
         return all_texts
 
     def hashtagCloud(self):
+        """
+        hashtagCloud function creates a hashtag wordcloud image
+        :return: image of hashtag cloud
+        """
         print ('...Generating Tag Cloud...')
         tags = self.hashtags()
         text = (" ").join(tags)
@@ -193,6 +223,10 @@ class TweetAnalysis:
         plt.savefig('figures/hashtagCloud_'+str(len(tags))+'.png', dpi=300)
 
     def textCloud(self):
+        """
+        textCloud function creates a text wordcloud image
+        :return: image of text cloud
+        """
         texts = self.texts()
         wordList=[]
         for t in texts:
@@ -209,6 +243,10 @@ class TweetAnalysis:
         plt.savefig('figures/WordCloud_' + str(len(wordList)) + '.png', dpi=300)
 
     def hashtagFrequenciesCsv(self):
+        """
+        hashtagfrequencies function creates a Counter dict of the list of hashtags
+        :return: counter dict of hashtags
+        """
         tags = self.hashtags()
         c = Counter(tags)
         y = OrderedDict(c.most_common())
@@ -219,6 +257,10 @@ class TweetAnalysis:
         return c
 
     def wordFrequenciesCsv(self):
+        """
+        wordfrequencies function creates a Counter dict of the list of words
+        :return: counter dict of words
+        """
         texts = self.texts()
         wordList = []
         for t in texts:
@@ -236,11 +278,18 @@ class TweetAnalysis:
         return c
 
     def most_retweeted_tweets(self,n):
+        """
+        most retweeted tweets function returns a list of the top retweets urls and a list of the top retweets ids
+        :return: list of strings urls, list of strings retweet ids
+        """
         rts = self.retweets()
         rtdict={}
         for r in rts:
             rtcount = r['retweeted_status']['retweet_count']
-            rtdict[r['id_str']]=rtcount
+            rt_id = r['retweeted_status']['id_str']
+            if rt_id in rtdict:
+                if rtcount > rtdict[rt_id]:
+                    rtdict[rt_id]=rtcount
         top = sorted(rtdict, key=rtdict.get, reverse=True)[:n]
         topUrls = ["https://twitter.com/user/status/"+i for i in top]
         file = open('files/top_'+str(n)+'_Retweets_' + datetime.date.today().strftime("%B %d, %Y") + '.csv', 'w',
@@ -248,15 +297,22 @@ class TweetAnalysis:
         for k in topUrls:
             file.write(str(k)+ '\n')
         file.close()
-        return topUrls
+        return topUrls,top
 
     def most_favorited_tweets(self,n):
+        """
+        most favorited tweets function returns a list of the top favorited tweets and a list of the top favorited tweet ids
+        :return: list of strings urls, list of strings most favorite ids
+        """
         ts = self.tweets()
         tdict={}
         for t in ts:
             if 'retweeted_status' in t:
                 favcount = t['retweeted_status']['favorite_count']
-                tdict[t['id_str']]=favcount
+                rt_id = r['retweeted_status']['id_str']
+                if rt_id in tdict:
+                    if favcount > tdict[rt_id]:
+                        tdict[rt_id]=favcount
             else:
                 favcount = t['favorite_count']
                 tdict[t['id_str']] = favcount
@@ -267,7 +323,7 @@ class TweetAnalysis:
         for k in topFavs:
             file.write(str(k)+ '\n')
         file.close()
-        return topFavs
+        return topFavs,top
 
     def topic_models(self):
         processed_docs = []
@@ -307,4 +363,4 @@ if __name__ == "__main__":
     # t.topic_models()
     # t.hashtagCloud()
     # t.textCloud()
-    t.top_n_urls(10)
+    # t.top_n_urls(10)
